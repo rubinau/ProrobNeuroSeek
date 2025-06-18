@@ -11,7 +11,7 @@ import time
 
 from camera import Camera
 from nlp import find_best_match
-# from robot_control import send_command_to_mcu
+from robot_control import send_command_to_mcu
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 app = Flask(__name__)
@@ -69,7 +69,7 @@ def background_processing_loop():
                     app_state['is_searching'] = False # Pause the search
                     app_state['robot_status'] = f"Confirmation needed for '{match}'"
                 
-                # send_command_to_mcu('pause_sweep')
+                send_command_to_mcu('pause_sweep')
 
                 # Get the frame, encode it, and send it to the UI
                 confirmation_frame = camera.get_confirmation_frame()
@@ -122,7 +122,7 @@ def handle_set_target(json_data):
         app_state['is_searching'] = True
         app_state['robot_status'] = f"Searching for '{item_description}'"
         app_state['ignored_items'].clear() # Clear ignore list for new search
-    # send_command_to_mcu(command=f'start_sweep:find={item_description}')
+    send_command_to_mcu(command=f'start_sweep:find={item_description}')
 
 @socketio.on('user_confirmation')
 def handle_user_confirmation(data):
@@ -135,14 +135,14 @@ def handle_user_confirmation(data):
             app_state['is_searching'] = False
             app_state['found_item'] = item
             app_state['robot_status'] = f"Task Complete. Found '{item}'."
-        # send_command_to_mcu('stop_sweep')
+        send_command_to_mcu('stop_sweep')
     else:
         logging.info(f"User REJECTED '{item}'. Resuming search.")
         with app_state['lock']:
             app_state['ignored_items'].add(item)
             app_state['is_searching'] = True
             app_state['robot_status'] = f"Resuming search... (ignoring '{item}')"
-        # send_command_to_mcu('start_sweep')
+        send_command_to_mcu('start_sweep')
 
 
 if __name__ == '__main__':
