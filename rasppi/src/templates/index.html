@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Missing Item Finder Bot</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
+    <!-- FIX: Link to the locally generated CSS file -->
+    <link href="/static/css/output.css" rel="stylesheet">
+    <!-- Use the downloaded Socket.IO client -->
+    <script src="/static/js/socket.io.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        /* All styling is now handled by the generated output.css file */
+        body { font-family: sans-serif; }
     </style>
 </head>
 <body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4">
@@ -60,6 +62,7 @@
     </footer>
 
 <script>
+    // This JavaScript logic remains the same as the last working version.
     document.addEventListener('DOMContentLoaded', () => {
         const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
@@ -113,8 +116,7 @@
                 span.className = 'bg-gray-700 text-gray-300 text-sm font-medium px-2.5 py-0.5 rounded-full';
                 span.textContent = 'None';
                 detectedObjectsList.appendChild(span);
-            }
-            // THE FIX: The logic that was here to hide the modal has been REMOVED.
+_                }
         });
         
         socket.on('request_confirmation', (data) => {
@@ -137,7 +139,6 @@
             if (currentConfirmationItem) {
                 socket.emit('user_confirmation', { confirmed: wasConfirmed, item: currentConfirmationItem });
             }
-            // THE FIX: The modal is now hidden immediately on click, not waiting for the server.
             hideModal();
         }
         
