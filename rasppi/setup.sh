@@ -4,7 +4,7 @@
 # Setup Script for the Missing Item Finder Robot (Fully Offline Version)
 # ==============================================================================
 # This script automates the setup of the Python environment AND the necessary
-# Node.js tools to build the CSS for fully offline web interface operation.
+# Node.js tools to build an optimized CSS file for the web interface.
 #
 # To run this script:
 # 1. Make it executable:  chmod +x setup.sh
@@ -35,7 +35,7 @@ echo "Prerequisites found."
 
 # --- Step 2: Create Python Virtual Environment ---
 VENV_DIR="venv"
-echo -e "\n[Step 2/7] Creating Python virtual environment..."
+echo -e "\n[Step 2/7] Creating Python virtual environment in './${VENV_DIR}'..."
 if [ -d "$VENV_DIR" ]; then
     echo "Python virtual environment already exists. Skipping creation."
 else
@@ -68,13 +68,14 @@ TAILWIND_CONFIG_FILE="tailwind.config.js"
 echo -e "\n[Step 5/7] Setting up and building offline CSS with Tailwind..."
 mkdir -p $CSS_DIR
 
-# Install Tailwind CSS CLI via npm
+# Install the latest version of Tailwind CSS
 echo "Installing Tailwind CSS..."
 npm install -D tailwindcss
 
-# Create the Tailwind CSS config file
+# Create the Tailwind CSS config file. This structure is current.
 echo "Creating ${TAILWIND_CONFIG_FILE}..."
 cat <<EOF > $TAILWIND_CONFIG_FILE
+/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./templates/**/*.html"],
   theme: {
@@ -92,10 +93,10 @@ cat <<EOF > $CSS_INPUT_FILE
 @tailwind utilities;
 EOF
 
-# Run the Tailwind build process
-echo "Building the final CSS file..."
-npx tailwindcss -i $CSS_INPUT_FILE -o $CSS_OUTPUT_FILE
-echo "Offline CSS file created at ${CSS_OUTPUT_FILE}"
+# FIX: Run the Tailwind build process with the --minify flag for an optimized output.
+echo "Building and minifying the final CSS file..."
+npx tailwindcss -i $CSS_INPUT_FILE -o $CSS_OUTPUT_FILE --minify
+echo "Optimized offline CSS file created at ${CSS_OUTPUT_FILE}"
 
 # --- Step 6: Download the SpaCy NLP Model ---
 echo -e "\n[Step 6/7] Downloading the SpaCy NLP model (en_core_web_md)..."
@@ -113,4 +114,5 @@ echo "2. Run the main application:       python3 app.py"
 echo ""
 echo "You can then access the web interface at http://<your_ip>:5000"
 echo "========================================================"
+```
 ```text
