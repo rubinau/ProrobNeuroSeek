@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missing Item Finder Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-lg bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-700">
+        <h1 class="text-3xl font-bold text-center mb-2 text-cyan-400">Missing Item Finder Robot</h1>
+        <p class="text-center text-gray-400 mb-6">Enter a description of the item you want to find.</p>
+        <!-- Controls -->
+        <div class="mb-6">
+            <div id="search-form">
+                <label for="item-input" class="block text-sm font-medium text-gray-400 mb-1">Item Description</label>
+                <input type="text" id="item-input" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:outline-none transition" placeholder="e.g., my red coffee mug">
+                <button id="find-button" class="mt-3 w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-md transition-all duration-200 ease-in-out transform hover:scale-105">
+                    Find Item
+                </button>
+            </div>
+        </div>
+        <!-- Status Area -->
+        <div>
+            <h2 class="text-xl font-semibold mb-3 text-gray-200">System Status</h2>
+            <div id="status-box" class="bg-gray-900/50 rounded-md p-4 border border-gray-600 min-h-[160px] flex flex-col justify-between">
+                <div>
+                    <p class="text-gray-400">Robot State: <span id="robot-status" class="font-semibold text-yellow-400">Initializing...</span></p>
+                    <p class="text-gray-400">Searching For: <span id="target-item" class="font-semibold text-cyan-400">N/A</span></p>
+                </div>
+                <div class="mt-4">
+                    <p class="text-gray-400">Currently Seeing:</p>
+                    <div id="detected-objects-list" class="flex flex-wrap gap-2 mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl border border-gray-700">
+            <h2 class="text-2xl font-bold text-center mb-4">Is this the item?</h2>
+            <p id="confirmation-text" class="text-center text-gray-300 mb-4">I found a <span class="font-bold text-cyan-400"></span>. Is this correct?</p>
+            <img id="confirmation-image" src="" alt="Confirmation Image" class="rounded-md mb-4 w-full h-auto object-contain max-h-64">
+            <div class="flex justify-around">
+                <button id="reject-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-8 rounded-md transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">Reject</button>
+                <button id="accept-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded-md transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">Accept</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-6 text-sm text-gray-500">
+        <p>Connection: <span id="connection-status" class="font-semibold text-red-500">Disconnected</span></p>
+    </footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+        const itemInput = document.getElementById('item-input');
+        const findButton = document.getElementById('find-button');
+        const robotStatusElem = document.getElementById('robot-status');
+        const targetItemElem = document.getElementById('target-item');
+        const detectedObjectsList = document.getElementById('detected-objects-list');
+        const modal = document.getElementById('confirmation-modal');
+        const confirmationText = document.getElementById('confirmation-text');
+        const confirmationImage = document.getElementById('confirmation-image');
+        const acceptButton = document.getElementById('accept-button');
+        const rejectButton = document.getElementById('reject-button');
+        const connectionStatus = document.getElementById('connection-status');
+
+        let currentConfirmationItem = null;
+
+        function hideModal() {
+            modal.classList.add('hidden');
+            currentConfirmationItem = null;
+        }
+        
+        function showModal() {
+            modal.classList.remove('hidden');
+        }
+
+        socket.on('connect', () => {
+            connectionStatus.textContent = 'Connected';
+            connectionStatus.classList.replace('text-red-500', 'text-green-500');
+        });
+        socket.on('disconnect', () => {
+            connectionStatus.textContent = 'Disconnected';
+            connectionStatus.classList.replace('text-green-500', 'text-red-500');
+            hideModal();
+        });
+
+        socket.on('status_update', (data) => {
+            robotStatusElem.textContent = data.robot_status;
+            targetItemElem.textContent = data.target_item || 'N/A';
+            detectedObjectsList.innerHTML = '';
+            const items = data.detected_objects || [];
+            if (items.length > 0) {
+                items.forEach(item => {
+                    const span = document.createElement('span');
+                    span.className = 'bg-gray-700 text-gray-300 text-sm font-medium px-2.5 py-0.5 rounded-full';
+                    span.textContent = item;
+                    detectedObjectsList.appendChild(span);
+                });
+            } else {
+                const span = document.createElement('span');
+                span.className = 'bg-gray-700 text-gray-300 text-sm font-medium px-2.5 py-0.5 rounded-full';
+                span.textContent = 'None';
+                detectedObjectsList.appendChild(span);
+            }
+            // THE FIX: The logic that was here to hide the modal has been REMOVED.
+        });
+        
+        socket.on('request_confirmation', (data) => {
+            currentConfirmationItem = data.label;
+            confirmationImage.src = 'data:image/jpeg;base64,' + data.image;
+            confirmationText.querySelector('span').textContent = data.label;
+            acceptButton.disabled = false;
+            rejectButton.disabled = false;
+            showModal();
+        });
+
+        findButton.addEventListener('click', () => {
+            const itemDescription = itemInput.value.trim();
+            if (itemDescription) socket.emit('set_target', { item: itemDescription });
+        });
+        
+        function handleConfirmation(wasConfirmed) {
+            acceptButton.disabled = true;
+            rejectButton.disabled = true;
+            if (currentConfirmationItem) {
+                socket.emit('user_confirmation', { confirmed: wasConfirmed, item: currentConfirmationItem });
+            }
+            // THE FIX: The modal is now hidden immediately on click, not waiting for the server.
+            hideModal();
+        }
+        
+        acceptButton.addEventListener('click', () => handleConfirmation(true));
+        rejectButton.addEventListener('click', () => handleConfirmation(false));
+    });
+</script>
+</body>
+</html>

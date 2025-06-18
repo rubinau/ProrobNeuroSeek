@@ -1,0 +1,9 @@
+ultralytics==8.3.156
+ncnn==1.0.20250503
+Flask==3.1.1
+Flask-SocketIO==5.5.1
+eventlet==0.40.0
+opencv-python==4.11.0.86
+spacy==3.8.7
+pyserial==3.5
+numpy==2.1.3
