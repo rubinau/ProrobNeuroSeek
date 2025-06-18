@@ -17,6 +17,10 @@ Motor motors[4] = {
 const int PWM_FREQ = 1000;
 const int PWM_RES = 8;
 
+const int trigPin = 12;
+const int echoPin = 13;
+
+
 float vx = -0.8;
 float vy = -        0.4;
 
@@ -66,9 +70,26 @@ void move(float vx, float vy) {
   }
 }
 
+float readDistanceCM() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH, 30000); // timeout at 30ms = ~5m
+  float distance = duration * 0.0343 / 2;  // speed of sound in air
+
+  return distance;
+}
+
+
 void setup() {
   Serial.begin(115200);
   setupMotors();
+  pinMode(trigPin, OUTPUT);
+pinMode(echoPin, INPUT);
+
 }
 
 const int stepsPerCycle = 100;
@@ -90,5 +111,11 @@ void loop() {
   Serial.println(vy, 2);
 
   stepIndex = (stepIndex + 1) % stepsPerCycle;
+
+    float distance = readDistanceCM();
+  Serial.print("Distance: ");
+  Serial.print(distance, 1);
+  Serial.println(" cm");
+
   delay(300); // adjust for speed
 }
