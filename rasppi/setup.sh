@@ -48,7 +48,7 @@ python3 -m pip install -r requirements.txt
 echo "All Python packages installed successfully."
 
 # --- Step 4: Download Offline JavaScript Assets ---
-STATIC_DIR="${PWD}/src/templates/static"
+STATIC_DIR="${PWD}/src/static"
 JS_DIR="${STATIC_DIR}/js"
 echo -e "\n[Step 4/4] Downloading offline JavaScript assets..."
 mkdir -p $JS_DIR
