@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Missing Item Finder Bot</title>
-    <!-- FIX: Link to the locally generated CSS file -->
-    <link href="/static/css/output.css" rel="stylesheet">
+    <!-- FIX: Link to your static, pre-generated CSS file -->
+    <link href="static/css/tailwind.css" rel="stylesheet">
     <!-- Use the downloaded Socket.IO client -->
-    <script src="/static/js/socket.io.js"></script>
+    <script src="static/js/socket.io.js"></script>
     <style>
-        /* All styling is now handled by the generated output.css file */
+        /* All styling is now handled by the static tailwind.css file */
         body { font-family: sans-serif; }
     </style>
 </head>
@@ -62,7 +62,6 @@
     </footer>
 
 <script>
-    // This JavaScript logic remains the same as the last working version.
     document.addEventListener('DOMContentLoaded', () => {
         const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
@@ -116,7 +115,7 @@
                 span.className = 'bg-gray-700 text-gray-300 text-sm font-medium px-2.5 py-0.5 rounded-full';
                 span.textContent = 'None';
                 detectedObjectsList.appendChild(span);
-_                }
+            }
         });
         
         socket.on('request_confirmation', (data) => {
