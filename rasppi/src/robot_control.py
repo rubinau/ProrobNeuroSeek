@@ -1,29 +1,67 @@
 # robot_control.py
-# Handles serial communication with the robot's MCU (ESP32).
+# Handles serial communication with the robot's MCU (ESP32), including sending and receiving data.
 
 import serial
 import logging
 import time
 import threading
+from queue import Queue
 
 # --- Globals ---
 ser = None
 # Lock to prevent multiple threads from writing to the serial port simultaneously.
 serial_lock = threading.Lock() 
+# Thread-safe queue for incoming messages from the MCU.
+incoming_message_queue = Queue()
+# Global handle for the reader thread
+reader_thread = None
 
 # --- Configuration ---
-# You may need to change this depending on how your Raspberry Pi recognizes the ESP32.
-# Common values are '/dev/ttyUSB0' or '/dev/ttyACM0'.
-# Use 'ls /dev/tty*' on your Pi to check.
 SERIAL_PORT = '/dev/ttyUSB0' 
 BAUD_RATE = 115200
 
-def initialize_serial():
+def _serial_reader_thread():
     """
-    Initializes the serial connection to the MCU.
-    Attempts to connect and retries if it fails.
+    Private function to run in a background thread.
+    Continuously reads from the serial port and puts messages in a queue.
     """
     global ser
+    logging.info("Serial reader thread started.")
+    while True:
+        if ser and ser.is_open:
+            try:
+                # Read a line from the serial port, which blocks until a newline is received or timeout occurs
+                line = ser.readline()
+                if line:
+                    # Decode from bytes to string and strip leading/trailing whitespace
+                    message = line.decode('utf-8').strip()
+                    if message:
+                        logging.info(f"Received from MCU: '{message}'")
+                        # Put the message into the thread-safe queue
+                        incoming_message_queue.put(message)
+            except serial.SerialException as e:
+                logging.error(f"Serial read error: {e}. Connection may be lost.")
+                # The main loop will handle reconnection
+                time.sleep(1)
+            except Exception as e:
+                logging.error(f"An unexpected error occurred in the serial reader thread: {e}")
+                time.sleep(1)
+        else:
+            # Wait if the serial port is not available
+            time.sleep(1)
+
+def initialize_serial():
+    """
+    Initializes the serial connection to the MCU and starts the reader thread.
+    Attempts to connect and retries if it fails.
+    """
+    global ser, reader_thread
+    
+    # Start the reader thread if it's not already running
+    if reader_thread is None or not reader_thread.is_alive():
+        reader_thread = threading.Thread(target=_serial_reader_thread, daemon=True)
+        reader_thread.start()
+
     while ser is None:
         try:
             with serial_lock:
@@ -52,35 +90,40 @@ def send_command_to_mcu(command: str):
     Sends a command string to the MCU over the serial port.
 
     Args:
-        command (str): The command to send (e.g., 'start_sweep', 'stop_sweep').
+        command (str): The command to send (e.g., 'i', 'o').
     """
     global ser
     if ser and ser.is_open:
         with serial_lock:
             try:
-                # Commands should be terminated with a newline character
-                # for easy parsing on the ESP32 side (e.g., using readStringUntil('\n'))
-                full_command = (command + '\n').encode('utf-8')
+                full_command = (command).encode('utf-8')
                 ser.write(full_command)
-                ser.flush() # Wait until all data is written
+                ser.flush() 
                 logging.info(f"Sent command to MCU: '{command}'")
             except serial.SerialException as e:
                 logging.error(f"Error writing to serial port: {e}. Connection might be lost.")
-                # Attempt to re-establish connection
                 ser.close()
                 ser = None
-                initialize_serial() # This will block and retry
+                initialize_serial()
             except Exception as e:
                 logging.error(f"An unexpected error occurred while sending command: {e}")
     else:
         logging.warning(f"Command '{command}' not sent. Serial connection not available.")
         if ser is None:
-             # If connection was never established or was lost, try to initialize it again
              logging.info("Attempting to re-initialize serial connection...")
-             # Run in a separate thread to avoid blocking the main application logic
              threading.Thread(target=initialize_serial, daemon=True).start()
 
+def get_latest_mcu_message():
+    """
+    Retrieves the latest message from the MCU without blocking.
+
+    Returns:
+        str: The oldest message from the queue, or None if the queue is empty.
+    """
+    if not incoming_message_queue.empty():
+        return incoming_message_queue.get_nowait()
+    return None
+
 # --- Initialize on module load ---
-# We'll start the initialization in a background thread so it doesn't block the main app at startup.
 initialization_thread = threading.Thread(target=initialize_serial, daemon=True)
 initialization_thread.start()
