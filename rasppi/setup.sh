@@ -51,7 +51,7 @@ python3 -m pip install -r requirements.txt
 echo "All Python packages installed successfully."
 
 # --- Step 4: Download Offline JavaScript Assets ---
-STATIC_DIR="static"
+STATIC_DIR="${PWD}/static"
 JS_DIR="${STATIC_DIR}/js"
 echo -e "\n[Step 4/7] Downloading offline JavaScript assets..."
 mkdir -p $JS_DIR
@@ -68,11 +68,11 @@ TAILWIND_CONFIG_FILE="tailwind.config.js"
 echo -e "\n[Step 5/7] Setting up and building offline CSS with Tailwind..."
 mkdir -p $CSS_DIR
 
-# Install the latest version of Tailwind CSS
-echo "Installing Tailwind CSS..."
-npm install -D tailwindcss
+# FIX: Explicitly install the latest stable V3 of Tailwind CSS for compatibility.
+echo "Installing Tailwind CSS v3..."
+npm install -D `tailwind`css@3
 
-# Create the Tailwind CSS config file. This structure is current.
+# Create the Tailwind CSS config file. This structure is correct for v3.
 echo "Creating ${TAILWIND_CONFIG_FILE}..."
 cat <<EOF > $TAILWIND_CONFIG_FILE
 /** @type {import('tailwindcss').Config} */
@@ -93,7 +93,7 @@ cat <<EOF > $CSS_INPUT_FILE
 @tailwind utilities;
 EOF
 
-# FIX: Run the Tailwind build process with the --minify flag for an optimized output.
+# Run the Tailwind build process with the --minify flag for an optimized output.
 echo "Building and minifying the final CSS file..."
 npx tailwindcss -i $CSS_INPUT_FILE -o $CSS_OUTPUT_FILE --minify
 echo "Optimized offline CSS file created at ${CSS_OUTPUT_FILE}"
@@ -114,5 +114,4 @@ echo "2. Run the main application:       python3 app.py"
 echo ""
 echo "You can then access the web interface at http://<your_ip>:5000"
 echo "========================================================"
-```
 ```text
