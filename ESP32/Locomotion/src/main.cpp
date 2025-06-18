@@ -10,8 +10,8 @@ struct Motor {
 Motor motors[4] = {
   {32, 15, 0},  // Front Left
   {25, 26, 1},  // Front Right
-  {27, 14, 2},  // Rear Left
-  {4,  16, 3}   // Rear Right
+  {14, 27, 2},  // Rear Left
+  {16,  4, 3}   // Rear Right
 };
 
 const int PWM_FREQ      = 1000;
@@ -19,8 +19,8 @@ const int PWM_RES       = 8;
 const int TRIG_PIN      = 12;
 const int ECHO_PIN      = 13;
 const float OBSTACLE_DIST = 20.0;  // cm threshold
-const float FWD_SPEED     = 0.2;   // 0…1
-const float ROT_SPEED     = 0.2;   // 0…1
+const float FWD_SPEED     = 0.4;   // 0…1
+const float ROT_SPEED     = 0.4;   // 0…1
 
 //---------------------------------------------------------------------------
 // Initialize motor pins & PWM channels
@@ -30,6 +30,8 @@ void setupMotors() {
     pinMode(motors[i].in1, OUTPUT);
     pinMode(motors[i].in2, OUTPUT);
     ledcSetup(motors[i].pwmChannel, PWM_FREQ, PWM_RES);
+    ledcDetachPin(motors[i].in1);
+    ledcDetachPin(motors[i].in2);
   }
 }
 
@@ -38,6 +40,8 @@ void setupMotors() {
 //---------------------------------------------------------------------------
 void setMotor(int id, float speed) {
   int pwmVal = constrain(abs(speed) * 255, 0, 255);
+   ledcDetachPin(motors[id].in1);
+  ledcDetachPin(motors[id].in2);
   if (speed > 0) {
     // forward
     digitalWrite(motors[id].in2, LOW);
@@ -64,9 +68,9 @@ void setMotor(int id, float speed) {
 void moveXY(float vx, float vy) {
   float speeds[4] = {
     vy + vx,  // FL
-    vy - vx,  // FR
+    -vy + vx,  // FR
     vy - vx,  // RL
-    vy + vx   // RR
+    -vy - vx   // RR
   };
   // normalize
   float maxVal = 0;
@@ -80,9 +84,9 @@ void moveXY(float vx, float vy) {
 //---------------------------------------------------------------------------
 void rotateRight(float omega) {
   setMotor(0, +omega);  // FL
-  setMotor(1, -omega);  // FR
+  setMotor(1, +omega);  // FR
   setMotor(2, +omega);  // RL
-  setMotor(3, -omega);  // RR
+  setMotor(3, +omega);  // RR
 }
 
 //---------------------------------------------------------------------------
@@ -114,26 +118,55 @@ void setup() {
 //---------------------------------------------------------------------------
 // Main loop: go forward until obstacle, then rotate until clear
 //---------------------------------------------------------------------------
+float vx = 0, vy = 0;
 void loop() {
-  float dist = readDistanceCM()+20;
-  Serial.print("Distance: ");
-  Serial.print(dist);
-  Serial.println(" cm");
+  // float dist = readDistanceCM()+20;
+  // Serial.print("Distance: ");
+  // Serial.print(dist);
+  // Serial.println(" cm");
 
-  if (dist > OBSTACLE_DIST) {
-    // clear path: drive straight ahead
-    moveXY(FWD_SPEED, 0); 
-  } else {
-    // obstacle too close: stop & rotate until it's gone
-    Serial.println("Obstacle detected → rotating...");
-    do {
-      rotateRight(ROT_SPEED);
-      delay(100);            // tweak this for rotation step size
-      dist = readDistanceCM();
-    } while (dist <= OBSTACLE_DIST);
-    Serial.println("Path clear → resuming forward");
+  // if (dist > OBSTACLE_DIST) {
+  //   // clear path: drive straight ahead
+  //   moveXY(FWD_SPEED, 0); 
+  // } else {
+  //   // obstacle too close: stop & rotate until it's gone
+  //   Serial.println("Obstacle detected → rotating...");
+  //   do {
+  //     rotateRight(ROT_SPEED);
+  //     delay(100);            // tweak this for rotation step size
+  //     dist = readDistanceCM();
+  //   } while (dist <= OBSTACLE_DIST);
+  //   Serial.println("Path clear → resuming forward");
+  // }
+
+  // rotateRight(ROT_SPEED);
+  // moveXY(-FWD_SPEED,0);
+  if (!Serial.available()) return;
+
+  char c = Serial.read();
+  
+
+  switch (c) {
+    case 'w': vx =  0;  vy =  FWD_SPEED;           break;  // forward
+    case 's': vx = 0;  vy =  -FWD_SPEED;           break;  // backward
+    case 'a': vx =  -FWD_SPEED;          vy = 0;   break;  // strafe left
+    case 'd': vx =  FWD_SPEED;          vy =  0;   break;  // strafe right
+    case 'q': rotateRight(-ROT_SPEED); delay(100); return;  // rotate left
+    case 'e': rotateRight(+ROT_SPEED); delay(100); return;  // rotate right
+    case 'x': moveXY(0,0);                              return;  // stop
+    default:  return;                                    // ignore others
   }
 
-  delay(50);
+  // Drive based on WASD
+  moveXY(vx, vy);
+
+  // Echo command & speeds
+  Serial.print("Cmd: ");
+  Serial.print(c);
+  Serial.print("  vx=");
+  Serial.print(vx, 2);
+  Serial.print("  vy=");
+  Serial.println(vy, 2);
+  delay(200);
 }                 
                                                                               
