@@ -119,11 +119,28 @@ void setup() {
 // Main loop: go forward until obstacle, then rotate until clear
 //---------------------------------------------------------------------------
 float vx = 0, vy = 0;
+int start = 0;
 void loop() {
-  // float dist = readDistanceCM()+20;
-  // Serial.print("Distance: ");
-  // Serial.print(dist);
-  // Serial.println(" cm");
+  if(start == 1){
+    float dist = readDistanceCM();
+    Serial.print("Distance: ");
+    Serial.print(dist);
+    Serial.println(" cm");
+
+    if(dist <= 10.0){
+      moveXY(0,0);
+      delay(100);
+      rotateRight(-ROT_SPEED);
+      delay(100);
+      moveXY(0,0);
+    }
+    else{
+      moveXY(0, FWD_SPEED);
+    }
+  }
+  else{
+    moveXY(0, 0);
+  }
 
   // if (dist > OBSTACLE_DIST) {
   //   // clear path: drive straight ahead
@@ -141,24 +158,27 @@ void loop() {
 
   // rotateRight(ROT_SPEED);
   // moveXY(-FWD_SPEED,0);
+
+
+
   if (!Serial.available()) return;
 
   char c = Serial.read();
   
 
   switch (c) {
-    case 'w': vx =  0;  vy =  FWD_SPEED;           break;  // forward
-    case 's': vx = 0;  vy =  -FWD_SPEED;           break;  // backward
-    case 'a': vx =  -FWD_SPEED;          vy = 0;   break;  // strafe left
-    case 'd': vx =  FWD_SPEED;          vy =  0;   break;  // strafe right
-    case 'q': rotateRight(-ROT_SPEED); delay(100); return;  // rotate left
-    case 'e': rotateRight(+ROT_SPEED); delay(100); return;  // rotate right
-    case 'x': moveXY(0,0);                              return;  // stop
+    // case 'w': vx =  0;  vy =  FWD_SPEED;           break;  // forward
+    // case 's': vx = 0;  vy =  -FWD_SPEED;           break;  // backward
+    // case 'a': vx =  -FWD_SPEED;          vy = 0;   break;  // strafe left
+    // case 'd': vx =  FWD_SPEED;          vy =  0;   break;  // strafe right
+    // case 'q': rotateRight(-ROT_SPEED); delay(100); return;  // rotate left
+    case 'i': moveXY(0, FWD_SPEED); start = 0;              return;  // rotate right
+    case 'o': moveXY(0,0); start = 0;              return;  // stop
     default:  return;                                    // ignore others
   }
 
   // Drive based on WASD
-  moveXY(vx, vy);
+  //moveXY(vx, vy);
 
   // Echo command & speeds
   Serial.print("Cmd: ");
