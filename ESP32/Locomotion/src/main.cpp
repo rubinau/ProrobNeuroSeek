@@ -19,8 +19,8 @@ const int PWM_RES       = 8;
 const int TRIG_PIN      = 12;
 const int ECHO_PIN      = 13;
 const float OBSTACLE_DIST = 20.0;  // cm threshold
-const float FWD_SPEED     = 0.6;   // 0…1
-const float ROT_SPEED     = 0.5;   // 0…1
+const float FWD_SPEED     = 0.2;   // 0…1
+const float ROT_SPEED     = 0.2;   // 0…1
 
 //---------------------------------------------------------------------------
 // Initialize motor pins & PWM channels
@@ -115,14 +115,14 @@ void setup() {
 // Main loop: go forward until obstacle, then rotate until clear
 //---------------------------------------------------------------------------
 void loop() {
-  float dist = readDistanceCM();
+  float dist = readDistanceCM()+20;
   Serial.print("Distance: ");
   Serial.print(dist);
   Serial.println(" cm");
 
   if (dist > OBSTACLE_DIST) {
     // clear path: drive straight ahead
-    moveXY(FWD_SPEED, 0);
+    moveXY(FWD_SPEED, 0); 
   } else {
     // obstacle too close: stop & rotate until it's gone
     Serial.println("Obstacle detected → rotating...");
@@ -135,4 +135,5 @@ void loop() {
   }
 
   delay(50);
-}
+}                 
+                                                                              
