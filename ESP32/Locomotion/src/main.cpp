@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <math.h>
 
 struct Motor {
   int in1;
@@ -17,7 +18,7 @@ const int PWM_FREQ = 1000;
 const int PWM_RES = 8;
 
 float vx = -0.8;
-float vy = -0.4;
+float vy = -        0.4;
 
 void setupMotors() {
   for (int i = 0; i < 4; i++) {
@@ -70,11 +71,24 @@ void setup() {
   setupMotors();
 }
 
+const int stepsPerCycle = 100;
+int stepIndex = 0;
+
 void loop() {
+  // Angle per step (full cycle = 2π)
+  float angle = 2 * PI * stepIndex / stepsPerCycle;
+
+  // Sinusoidal motion
+  vx = sin(angle);
+  vy = cos(angle);  // use sin(angle + PI/2) for smooth circular motion
+
   move(vx, vy);
+
   Serial.print("vx: ");
   Serial.print(vx, 2);
   Serial.print(" | vy: ");
   Serial.println(vy, 2);
-  delay(300);
+
+  stepIndex = (stepIndex + 1) % stepsPerCycle;
+  delay(300); // adjust for speed
 }
